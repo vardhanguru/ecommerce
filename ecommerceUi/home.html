@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home - Fashion Shop</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <a href="index.html" class="logo">FASHION SHOP</a>
+        <div class="nav-links">
+            <a href="home.html">Home</a>
+            <a href="#">Products</a>
+            <a href="#">Categories</a>
+            <a href="#">Contact</a>
+            <a href="#" onclick="logout()">Logout</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- Home Page (After Login) -->
+        <div id="home" class="page active">
+            <section class="hero">
+                <div class="hero-content">
+                    <h1>Welcome Back, <span id="userName">User</span>!</h1>
+                    <p>Explore our exclusive collection tailored just for you</p>
+                    <a href="#" class="btn">Shop Now</a>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script>
+        // Utility function to get cookie by name
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+            return null;
+        }
+
+        // Check authentication and fetch user data
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                // Log session cookie for debugging
+                const sessionId = getCookie('sessionid');
+                console.log('Session ID cookie:', sessionId ? sessionId : 'Not found');
+
+                // Fetch user data to confirm authentication and get user details
+                const response = await fetch('http://localhost:8000/api/user/', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include' // Include cookies for session authentication
+                });
+
+                console.log('User fetch response status:', response.status);
+
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('User fetch response data:', data);
+                    if (data.status === 'success' && data.user) {
+                        // Display user's first name
+                        document.getElementById('userName').textContent = data.user.first_name || 'User';
+                    } else {
+                        // User not authenticated, redirect to login
+                        alert('Please log in to access this page');
+                        window.location.href = 'login.html';
+                    }
+                } else {
+                    // Handle non-200 responses
+                    console.error('User fetch failed with status:', response.status);
+                    alert('Please log in to access this page');
+                    window.location.href = 'login.html';
+                }
+            } catch (error) {
+                console.error('Error fetching user data:', error);
+                alert('Network error. Please try again.');
+                window.location.href = 'login.html';
+            }
+        });
+
+        // Logout function
+        function logout() {
+            // Log session cookie for debugging
+            const sessionId = getCookie('sessionid');
+            console.log('Session ID cookie before logout:', sessionId ? sessionId : 'Not found');
+
+            // Call backend logout endpoint
+            fetch('http://localhost:8000/api/logout/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include' // Include cookies for session authentication
+            })
+            .then(response => {
+                console.log('Logout response status:', response.status);
+                if (!response.ok) {
+                    throw new Error(`Logout request failed with status ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Logout response data:', data);
+                if (data.status === 'success') {
+                    // Clear session cookie (optional, as backend should handle this)
+                    document.cookie = 'sessionid=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
+                    window.location.href = 'index.html';
+                } else {
+                    alert(data.message || 'Logout failed. Please try again.');
+                }
+            })
+            .catch(error => {
+                console.error('Error during logout:', error);
+                alert('Network error during logout. Please try again.');
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - Fashion Shop</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <a href="index.html" class="logo">FASHION SHOP</a>
+        <div class="nav-links">
+            <a href="index.html">Home</a>
+            <a href="#">Products</a>
+            <a href="#">Categories</a>
+            <a href="#">Contact</a>
+            <a href="login.html">Login</a>
+            <a href="register.html">Register</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- Register Page -->
+        <div id="register" class="page active">
+            <div class="auth-container">
+                <div class="auth-card card">
+                    <div class="logo" style="text-align: center; margin-bottom: 20px;">FASHION SHOP</div>
+                    <h2>Create Account</h2>
+                    <form id="registrationForm">
+                        <div class="form-group">
+                            <label for="first_name">First Name</label>
+                            <input type="text" id="first_name" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="last_name">Last Name</label>
+                            <input type="text" id="last_name" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="username">Username</label>
+                            <input type="text" id="username" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="email">Email</label>
+                            <div class="otp-container">
+                                <input type="email" id="email" required>
+                                <button type="button" id="sendOtpBtn">Send OTP</button>
+                            </div>
+                            <div id="emailStatus"></div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="otp">OTP Verification</label>
+                            <div class="otp-container">
+                                <input type="text" id="otp" placeholder="Enter OTP" disabled>
+                                <button type="button" id="verifyOtpBtn" disabled>Verify</button>
+                            </div>
+                            <div id="otpStatus"></div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="phone">Phone Number</label>
+                            <input type="tel" id="phone" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="password">Password</label>
+                            <input type="password" id="password" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="confirm_password">Confirm Password</label>
+                            <input type="password" id="confirm_password" required>
+                        </div>
+                        
+                        <button type="submit" id="registerBtn" disabled>Register</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Register Page Scripts
+        document.addEventListener('DOMContentLoaded', () => {
+            const sendOtpBtn = document.getElementById('sendOtpBtn');
+            const verifyOtpBtn = document.getElementById('verifyOtpBtn');
+            const registerBtn = document.getElementById('registerBtn');
+            const emailInput = document.getElementById('email');
+            const otpInput = document.getElementById('otp');
+            const emailStatus = document.getElementById('emailStatus');
+            const otpStatus = document.getElementById('otpStatus');
+            const passwordInput = document.getElementById('password');
+            const confirmPasswordInput = document.getElementById('confirm_password');
+            
+            let emailVerified = false;
+            
+            // Send OTP
+            if (sendOtpBtn) {
+                sendOtpBtn.addEventListener('click', async () => {
+                    const email = emailInput.value;
+                    
+                    if (!validateEmail(email)) {
+                        emailStatus.textContent = 'Please enter a valid email';
+                        emailStatus.className = 'error';
+                        return;
+                    }
+                    
+                    try {
+                        const response = await fetch('http://localhost:8000/api/generate-otp/', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ email })
+                        });
+                        
+                        const data = await response.json();
+                        
+                        if (data.status === 'success') {
+                            emailStatus.textContent = 'OTP sent to your email';
+                            emailStatus.className = 'success';
+                            otpInput.disabled = false;
+                            verifyOtpBtn.disabled = false;
+                        } else {
+                            emailStatus.textContent = data.message || 'Error sending OTP';
+                            emailStatus.className = 'error';
+                        }
+                    } catch (error) {
+                        emailStatus.textContent = 'Network error';
+                        emailStatus.className = 'error';
+                    }
+                });
+            }
+            
+            // Verify OTP
+            if (verifyOtpBtn) {
+                verifyOtpBtn.addEventListener('click', async () => {
+                    const email = emailInput.value;
+                    const otp = otpInput.value;
+                    
+                    if (!otp) {
+                        otpStatus.textContent = 'Please enter OTP';
+                        otpStatus.className = 'error';
+                        return;
+                    }
+                    
+                    try {
+                        const response = await fetch('http://localhost:8000/api/verify-otp/', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ email, otp })
+                        });
+                        
+                        const data = await response.json();
+                        
+                        if (data.status === 'success') {
+                            otpStatus.textContent = 'Email verified successfully';
+                            otpStatus.className = 'success';
+                            emailVerified = true;
+                            registerBtn.disabled = false;
+                        } else {
+                            otpStatus.textContent = data.message || 'Invalid OTP';
+                            otpStatus.className = 'error';
+                        }
+                    } catch (error) {
+                        otpStatus.textContent = 'Network error';
+                        otpStatus.className = 'error';
+                    }
+                });
+            }
+            
+            // Register form submission
+            if (document.getElementById('registrationForm')) {
+                document.getElementById('registrationForm').addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    
+                    if (!emailVerified) {
+                        alert('Please verify your email first');
+                        return;
+                    }
+                    
+                    if (passwordInput.value !== confirmPasswordInput.value) {
+                        alert('Passwords do not match');
+                        return;
+                    }
+                    
+                    const userData = {
+                        first_name: document.getElementById('first_name').value,
+                        last_name: document.getElementById('last_name').value,
+                        username: document.getElementById('username').value,
+                        email: emailInput.value,
+                        phone: document.getElementById('phone').value,
+                        password: passwordInput.value
+                    };
+                    
+                    try {
+                        const response = await fetch('http://localhost:8000/api/register/', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(userData)
+                        });
+                        
+                        const data = await response.json();
+                        
+                        if (data.status === 'success') {
+                            alert('Registration successful! Redirecting to login...');
+                            window.location.href = 'login.html';
+                        } else {
+                            alert(data.message || 'Registration failed');
+                        }
+                    } catch (error) {
+                        alert('Network error');
+                    }
+                });
+            }
+            
+            // Email validation
+            function validateEmail(email) {
+                const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                return re.test(email);
+            }
+        });
+    </script>
+</body>
+</html>

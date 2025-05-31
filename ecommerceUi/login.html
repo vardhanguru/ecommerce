@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Fashion Shop</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <a href="index.html" class="logo">FASHION SHOP</a>
+        <div class="nav-links">
+            <a href="index.html">Home</a>
+            <a href="#">Products</a>
+            <a href="#">Categories</a>
+            <a href="#">Contact</a>
+            <a href="login.html">Login</a>
+            <a href="register.html">Register</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- Login Page -->
+        <div id="login" class="page active">
+            <div class="auth-container">
+                <div class="auth-card card">
+                    <div class="logo" style="text-align: center; margin-bottom: 20px;">FASHION SHOP</div>
+                    <h2>Login to Your Account</h2>
+                    <form id="loginForm">
+                        <div class="form-group">
+                            <label for="email_or_username">Email or Username</label>
+                            <input type="text" id="email_or_username" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="password">Password</label>
+                            <input type="password" id="password" required>
+                        </div>
+                        
+                        <button type="submit">Login</button>
+                        
+                        <div class="register-link">
+                            Don't have an account? <a href="register.html">Register</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Login form submission
+        document.addEventListener('DOMContentLoaded', () => {
+            if (document.getElementById('loginForm')) {
+                document.getElementById('loginForm').addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    
+                    const credentials = {
+                        email_or_username: document.getElementById('email_or_username').value,
+                        password: document.getElementById('password').value
+                    };
+                    
+                    try {
+                        const response = await fetch('http://localhost:8000/api/login/', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(credentials)
+                        });
+                        
+                        const data = await response.json();
+                        
+                        if (data.status === 'success') {
+                            // Store authentication token or session
+                            localStorage.setItem('authToken', 'your-auth-token');
+                            
+                            // Redirect to home page
+                            window.location.href = 'home.html';
+                        } else {
+                            alert(data.message || 'Login failed');
+                        }
+                    } catch (error) {
+                        alert('Network error');
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>
