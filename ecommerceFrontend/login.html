@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Fashion Shop</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <a href="index.html" class="logo">FASHION SHOP</a>
+        <div class="nav-links">
+            <a href="index.html">Home</a>
+            <a href="#">Products</a>
+            <a href="#">Categories</a>
+            <a href="#">Contact</a>
+            <a href="login.html">Login</a>
+            <a href="register.html">Register</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div id="login" class="page active">
+            <div class="auth-container">
+                <div class="auth-card card">
+                    <div class="logo" style="text-align: center; margin-bottom: 20px;">FASHION SHOP</div>
+                    <h2>Login to Your Account</h2>
+                    <form id="loginForm">
+                        <div class="form-group">
+                            <label for="email_or_username">Email or Username</label>
+                            <input type="text" id="email_or_username" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="password">Password</label>
+                            <input type="password" id="password" required>
+                        </div>
+                        <button type="submit">Login</button>
+                        <div class="register-link">
+                            Don't have an account? <a href="register.html">Register</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('Login page loaded');
+            console.log('Frontend origin:', window.location.origin);
+            document.getElementById('loginForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const emailOrUsername = document.getElementById('email_or_username').value.trim();
+                const password = document.getElementById('password').value.trim();
+                if (!emailOrUsername || !password) {
+                    alert('Please fill in all fields');
+                    return;
+                }
+                const credentials = {
+                    email_or_username: emailOrUsername,
+                    password: password
+                };
+                console.log('Sending login request:', credentials);
+                try {
+                    const response = await fetch('http://localhost:8000/account/login/', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(credentials)
+                    });
+                    console.log('Response status:', response.status);
+                    console.log('Response headers:', [...response.headers.entries()]);
+                    const data = await response.json();
+                    console.log('Login response:', data);
+                    if (data.status === 'success') {
+                        localStorage.setItem('token', data.token);
+                        console.log('Token saved:', data.token);
+                        alert('Login successful');
+                        window.location.href = data.redirect || 'home.html';
+                    } else {
+                        alert(data.message || 'Login failed');
+                    }
+                } catch (error) {
+                    console.error('Fetch error:', error);
+                    alert('Network error: ' + error.message);
+                }
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Home - Fashion Shop</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        .cart-icon {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
+            cursor: pointer;
+            font-size: 1.6rem;
+            color: black;
+        }
+
+        .cart-count {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background-color: red;
+            color: white;
+            font-size: 0.75rem;
+            padding: 2px 6px;
+            border-radius: 50%;
+        }
+
+        .navbar {
+            background-color: #f2f2f2;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 500;
+        }
+
+        .logo {
+            font-weight: bold;
+            text-decoration: none;
+            color: #333;
+        }
+
+        .nav-links a {
+            margin-left: 15px;
+            text-decoration: none;
+            color: #555;
+        }
+
+        .products-grid {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            padding: 20px;
+            gap: 20px;
+        }
+
+        .product-card {
+            width: 180px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            background-color: #fff;
+            text-align: center;
+        }
+
+        .product-card img {
+            width: 150px;
+            height: 150px;
+            object-fit: cover;
+            margin-bottom: 10px;
+        }
+
+        button {
+            padding: 6px 12px;
+            margin-top: 8px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        button:hover {
+            background-color: #218838;
+        }
+
+        h2 {
+            text-align: center;
+            margin-top: 30px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 🛒 Cart Icon -->
+    <div class="cart-icon" onclick="window.location.href='cart.html'">
+        <i class="fas fa-shopping-cart"></i>
+        <div class="cart-count" id="cartCount">0</div>
+    </div>
+
+    <!-- 🔗 Navigation Bar -->
+    <div class="navbar">
+        <a href="index.html" class="logo">FASHION SHOP</a>
+        <div class="nav-links">
+            <a href="home.html">Home</a>
+            <a href="#">Products</a>
+            <a href="#">Categories</a>
+            <a href="#">Contact</a>
+            <a href="login.html" id="authLink">Login</a>
+        </div>
+    </div>
+
+    <!-- 🛍️ Product Section -->
+    <h2>Featured Products</h2>
+    <div class="products-grid" id="productsGrid">
+        <!-- JS inserts product cards here -->
+    </div>
+
+    <script>
+        let isAuthenticated = false;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                alert('Please login to access this page');
+                window.location.href = 'login.html';
+                return;
+            }
+
+            try {
+                const userResponse = await fetch('http://localhost:8000/account/user/', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Token ${token}`
+                    }
+                });
+
+                const userData = await userResponse.json();
+                if (userData.status === 'success') {
+                    isAuthenticated = true;
+                    const authLink = document.getElementById('authLink');
+                    authLink.textContent = 'Logout';
+                    authLink.href = '#';
+                    authLink.onclick = logout;
+                    await loadProducts();
+                    await loadCartCount();
+                } else {
+                    localStorage.removeItem('token');
+                    window.location.href = 'login.html';
+                }
+            } catch (error) {
+                alert('Error verifying login');
+                localStorage.removeItem('token');
+                window.location.href = 'login.html';
+            }
+        });
+
+        async function loadProducts() {
+            const token = localStorage.getItem('token');
+            try {
+                const response = await fetch('http://localhost:8000/shop/products/', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Token ${token}`
+                    }
+                });
+
+                const data = await response.json();
+                if (data.status === 'success') {
+                    renderProducts(data.products);
+                } else {
+                    document.getElementById('productsGrid').innerHTML = '<p>No products available</p>';
+                }
+            } catch (error) {
+                document.getElementById('productsGrid').innerHTML = '<p>Error loading products</p>';
+            }
+        }
+
+        function renderProducts(products) {
+            const grid = document.getElementById('productsGrid');
+            grid.innerHTML = '';
+            products.forEach(product => {
+                const div = document.createElement('div');
+                div.className = 'product-card';
+                div.innerHTML = `
+                    <img src="${product.image}" alt="${product.name}">
+                    <h4>${product.name}</h4>
+                    <p>$${product.price.toFixed(2)}</p>
+                    <button onclick="addToCart(${product.id})">Add to Cart</button>
+                `;
+                grid.appendChild(div);
+            });
+        }
+
+        async function addToCart(productId) {
+            const token = localStorage.getItem('token');
+            try {
+                const response = await fetch('http://localhost:8000/shop/cart/add/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Token ${token}`
+                    },
+                    body: JSON.stringify({ product_id: productId, quantity: 1 })
+                });
+
+                const data = await response.json();
+                if (data.status === 'success') {
+                    alert('Added to cart!');
+                    loadCartCount();
+                } else {
+                    alert(data.message || 'Add to cart failed');
+                }
+            } catch (error) {
+                alert('Failed to add item: ' + error.message);
+            }
+        }
+
+        async function loadCartCount() {
+            const token = localStorage.getItem('token');
+            try {
+                const response = await fetch('http://localhost:8000/shop/cart/', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Token ${token}`
+                    }
+                });
+
+                const data = await response.json();
+                const count = data.items?.reduce((sum, item) => sum + item.quantity, 0) || 0;
+                document.getElementById('cartCount').textContent = count;
+            } catch (error) {
+                document.getElementById('cartCount').textContent = '0';
+            }
+        }
+
+        async function logout() {
+            const token = localStorage.getItem('token');
+            await fetch('http://localhost:8000/account/logout/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Token ${token}`
+                }
+            });
+            localStorage.removeItem('token');
+            window.location.href = 'login.html';
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,119 @@
+<body>
+    <nav class="navbar">
+        <a href="index.html" class="logo">FASHION SHOP</a>
+        <div class="nav-links">
+            <a href="home.html">Home</a>
+            <a href="#">Products</a>
+            <a href="#">Categories</a>
+            <a href="#">Contact</a>
+            <a href="login.html" id="authLink">Login</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div id="productDetails">
+            <!-- Product details will be loaded here -->
+        </div>
+    </div>
+
+    <script>
+        let isAuthenticated = false;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const userResponse = await fetch('http://localhost:8000/account/user/', {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include'
+                });
+                const userData = await userResponse.json();
+                if (userData.status === 'success' && userData.user) {
+                    isAuthenticated = true;
+                    const authLink = document.getElementById('authLink');
+                    authLink.textContent = 'Logout';
+                    authLink.href = '#';
+                    authLink.onclick = logout;
+                    await loadProduct();
+                } else {
+                    alert('Please login to access this page');
+                    window.location.href = 'login.html';
+                }
+            } catch (error) {
+                console.error('Error fetching user:', error);
+                window.location.href = 'login.html';
+            }
+        });
+
+        async function loadProduct() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const productId = urlParams.get('id');
+            if (!productId) {
+                document.getElementById('productDetails').innerHTML = '<p>Product not found</p>';
+                return;
+            }
+            try {
+                const response = await fetch(`http://localhost:8000/shop/products/${productId}/`, {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include'
+                });
+                if (!response.ok) throw new Error('Failed to load product');
+                const data = await response.json();
+                if (data.status === 'success') {
+                    const product = data.product;
+                    document.getElementById('productDetails').innerHTML = `
+                        <h2>${product.name}</h2>
+                        <img src="${product.image}" alt="${product.name}" style="max-width: 300px;">
+                        <p>${product.description}</p>
+                        <p>Price: $${product.price}</p>
+                        <button onclick="addToCart(${product.id})">Add to Cart</button>
+                    `;
+                } else {
+                    document.getElementById('productDetails').innerHTML = '<p>Product not found</p>';
+                }
+            } catch (error) {
+                console.error('Error loading product:', error);
+                document.getElementById('productDetails').innerHTML = '<p>Error loading product</p>';
+            }
+        }
+
+        async function addToCart(productId) {
+            if (!isAuthenticated) {
+                alert('Please login to add to cart');
+                window.location.href = 'login.html';
+                return;
+            }
+            try {
+                const response = await fetch('http://localhost:8000/shop/cart/add/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ product_id: productId, quantity: 1 })
+                });
+                if (!response.ok) throw new Error('Failed to add to cart');
+                const data = await response.json();
+                if (data.status === 'success') {
+                    alert('Product added to cart!');
+                }
+            } catch (error) {
+                console.error('Error adding to cart:', error);
+                alert('Failed to add to cart');
+            }
+        }
+
+        async function logout() {
+            try {
+                const response = await fetch('http://localhost:8000/account/logout/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include'
+                });
+                if (response.ok) {
+                    window.location.href = 'login.html';
+                }
+            } catch (error) {
+                console.error('Logout error:', error);
+            }
+        }
+    </script>
+</body>

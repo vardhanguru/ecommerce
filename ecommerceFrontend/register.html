@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - Fashion Shop</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <a href="index.html" class="logo">FASHION SHOP</a>
+        <div class="nav-links">
+            <a href="index.html">Home</a>
+            <a href="#">Products</a>
+            <a href="#">Categories</a>
+            <a href="#">Contact</a>
+            <a href="login.html">Login</a>
+            <a href="register.html">Register</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div id="register" class="page active">
+            <div class="auth-container">
+                <div class="auth-card card">
+                    <div class="logo" style="text-align: center; margin-bottom: 20px;">FASHION SHOP</div>
+                    <h2>Register Your Account</h2>
+                    <form id="otpForm">
+                        <div class="form-group">
+                            <label for="email">Email</label>
+                            <input type="email" id="email" required>
+                        </div>
+                        <button type="submit">Generate OTP</button>
+                    </form>
+                    <form id="verifyOtpForm" style="display: none;">
+                        <div class="form-group">
+                            <label for="otp">OTP</label>
+                            <input type="text" id="otp" required>
+                        </div>
+                        <button type="submit">Verify OTP</button>
+                    </form>
+                    <form id="registerForm" style="display: none;">
+                        <div class="form-group">
+                            <label for="username">Username</label>
+                            <input type="text" id="username" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="password">Password</label>
+                            <input type="password" id="password" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="first_name">First Name</label>
+                            <input type="text" id="first_name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="last_name">Last Name</label>
+                            <input type="text" id="last_name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="phone">Phone</label>
+                            <input type="text" id="phone" required>
+                        </div>
+                        <button type="submit">Register</button>
+                        <div class="login-link">
+                            Already have an account? <a href="login.html">Login</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('Register page loaded');
+            console.log('Frontend origin:', window.location.origin);
+            let userEmail = '';
+
+            // Generate OTP
+            document.getElementById('otpForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                userEmail = document.getElementById('email').value;
+                console.log('Generating OTP for:', userEmail);
+                try {
+                    const response = await fetch('http://localhost:8000/account/generate-otp/', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email: userEmail })
+                    });
+                    console.log('Generate OTP response status:', response.status);
+                    console.log('Response headers:', [...response.headers.entries()]);
+                    const data = await response.json();
+                    console.log('Generate OTP response:', data);
+                    if (data.status === 'success') {
+                        alert('OTP sent to your email');
+                        document.getElementById('otpForm').style.display = 'none';
+                        document.getElementById('verifyOtpForm').style.display = 'block';
+                    } else {
+                        alert(data.message || 'Failed to generate OTP');
+                    }
+                } catch (error) {
+                    console.error('Fetch error:', error);
+                    alert('Network error: ' + error.message);
+                }
+            });
+
+            // Verify OTP
+            document.getElementById('verifyOtpForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const otp = document.getElementById('otp').value;
+                console.log('Verifying OTP for:', userEmail);
+                try {
+                    const response = await fetch('http://localhost:8000/account/verify-otp/', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email: userEmail, otp })
+                    });
+                    console.log('Verify OTP response status:', response.status);
+                    console.log('Response headers:', [...response.headers.entries()]);
+                    const data = await response.json();
+                    console.log('Verify OTP response:', data);
+                    if (data.status === 'success') {
+                        alert('OTP verified');
+                        document.getElementById('verifyOtpForm').style.display = 'none';
+                        document.getElementById('registerForm').style.display = 'block';
+                    } else {
+                        alert(data.message || 'Invalid OTP');
+                    }
+                } catch (error) {
+                    console.error('Fetch error:', error);
+                    alert('Network error: ' + error.message);
+                }
+            });
+
+            // Register
+            document.getElementById('registerForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const userData = {
+                    email: userEmail,
+                    username: document.getElementById('username').value,
+                    password: document.getElementById('password').value,
+                    first_name: document.getElementById('first_name').value,
+                    last_name: document.getElementById('last_name').value,
+                    phone: document.getElementById('phone').value
+                };
+                console.log('Registering user:', userData);
+                try {
+                    const response = await fetch('http://localhost:8000/account/register/', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(userData)
+                    });
+                    console.log('Register response status:', response.status);
+                    console.log('Response headers:', [...response.headers.entries()]);
+                    const data = await response.json();
+                    console.log('Register response:', data);
+                    if (data.status === 'success') {
+                        if (data.token) {
+                            localStorage.setItem('token', data.token);
+                            console.log('Token saved:', data.token);
+                            alert('Registration successful');
+                            window.location.href = data.redirect || 'home.html';
+                        } else {
+                            alert('Registration successful, please login');
+                            window.location.href = 'login.html';
+                        }
+                    } else {
+                        alert(data.message || 'Registration failed');
+                    }
+                } catch (error) {
+                    console.error('Fetch error:', error);
+                    alert('Network error: ' + error.message);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
